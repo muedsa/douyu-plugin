@@ -5,12 +5,14 @@ tvboxApi = "12.1.0"
 junit4 = "4.13.2"
 kotlinxCoroutinesTest = "1.10.2"
 smaliDexlib2 = "3.0.9"
+vibeJs = "0.0.1"
 
 [libraries]
 tvbox-api = { module = "com.muedsa.tvbox:api", version.ref = "tvboxApi" }
 junit4 = { group = "junit", name = "junit", version.ref = "junit4" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
 smali-dexlib2 = { module = "com.android.tools.smali:smali-dexlib2", version.ref = "smaliDexlib2" }
+vibe-js = { module = "com.muedsa.js:vibe-js", version.ref = "vibeJs" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
