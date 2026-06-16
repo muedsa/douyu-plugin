@@ -17,7 +17,7 @@ class MediaSearchServiceTest {
 
     @Test
     fun searchMedias_test() = runTest {
-        val row = service.searchMedias("GIRLS BAND CRY")
+        val row = service.searchMedias("601514")
         checkMediaCardRow(row = row)
     }
 }
