@@ -85,6 +85,8 @@ dependencies {
     testImplementation(libs.tvbox.api)
     testImplementation(libs.junit4)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.robolectric)
 }
 
 // 尝试删除不需要打包的代码

@@ -159,4 +159,8 @@ class DemoTest {
         println(result)
         println(interpreter.getCurrentEnv().dumpEnv())
     }
+
+    fun demo2() = runTest {
+
+    }
 }

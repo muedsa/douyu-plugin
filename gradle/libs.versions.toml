@@ -3,9 +3,11 @@ agp = "8.13.2"
 kotlin = "2.3.10"
 tvboxApi = "12.1.0"
 junit4 = "4.13.2"
-kotlinxCoroutinesTest = "1.10.2"
+kotlinxCoroutinesTest = "1.11.0"
 smaliDexlib2 = "3.0.9"
 vibeJs = "0.0.1"
+androidxTest = "1.7.0"
+robolectric = "4.16.1"
 
 [libraries]
 tvbox-api = { module = "com.muedsa.tvbox:api", version.ref = "tvboxApi" }
@@ -13,6 +15,8 @@ junit4 = { group = "junit", name = "junit", version.ref = "junit4" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
 smali-dexlib2 = { module = "com.android.tools.smali:smali-dexlib2", version.ref = "smaliDexlib2" }
 vibe-js = { module = "com.muedsa.js:vibe-js", version.ref = "vibeJs" }
+androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTest" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

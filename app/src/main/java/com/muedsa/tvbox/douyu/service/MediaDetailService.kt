@@ -8,42 +8,57 @@ import com.muedsa.tvbox.api.data.MediaHttpSource
 import com.muedsa.tvbox.api.data.MediaPlaySource
 import com.muedsa.tvbox.api.data.SavedMediaCard
 import com.muedsa.tvbox.api.service.IMediaDetailService
+import com.muedsa.tvbox.api.store.IPluginPerfStore
 import com.muedsa.tvbox.douyu.DouyuConst
 import com.muedsa.tvbox.douyu.DouyuHelper
+import com.muedsa.tvbox.douyu.model.DouyuApiResp
+import com.muedsa.tvbox.douyu.model.H5PlayInfo
+import com.muedsa.tvbox.douyu.model.LiveConfig
 
 class MediaDetailService(
     private val douyuService: DouyuService,
+    private val store: IPluginPerfStore,
 ) : IMediaDetailService {
 
+    private val actionDelegate = ActionDelegate(
+        store = store,
+    )
+
     override suspend fun getDetailData(mediaId: String, detailUrl: String): MediaDetail {
+        if (mediaId.startsWith(ActionDelegate.ACTION_PREFIX)) {
+            return actionDelegate.exec(action = mediaId, data = detailUrl)
+        }
+
         val rid: Long = mediaId.toLong()
         val betard = douyuService.roomBetard(rid)
         if (betard.room.roomId < 0) {
             throw RuntimeException("查询${mediaId}房间betard信息失败")
         }
         val playSourceList = if (betard.room.showStatus == 1) {
-            val h5EncResp = douyuService.homeH5Enc(rid)
-            check(h5EncResp.error == 0) { h5EncResp.msg ?: "查询h5enc失败" }
-            checkNotNull(h5EncResp.data){ "查询h5enc失败，返回值为空" }
-            val jsCode = h5EncResp.data["room${rid}"]
-            checkNotNull(jsCode){ "查询h5enc失败，jsCode为空" }
-            val signParms = DouyuHelper.buildSignParms(jsCode, rid)
-            val playInfoResp = douyuService.getH5Play(rid = rid, signParams = signParms)
-            val episodes = playInfoResp.data?.multiRates?.map {  r ->
-                MediaEpisode(
-                    id = r.rate.toString(),
-                    name = r.name,
-                    flag1 = r.rate,
-                    flag3 = rid,
+            try {
+                val playInfo = getPlayInfo(
+                    rid = rid,
+                    did = DouyuConst.DID,
+                    liveConfig = actionDelegate.getLiveConfig(),
                 )
-            } ?: emptyList()
-            playInfoResp.data?.cdnsWithName?.map {  cdn ->
-                MediaPlaySource(
-                    id = cdn.cdn,
-                    name = cdn.name,
-                    episodeList = episodes
-                )
-            } ?: emptyList()
+                val episodes = playInfo.multiRates.map { r ->
+                    MediaEpisode(
+                        id = r.rate.toString(),
+                        name = r.name,
+                        flag1 = r.rate,
+                        flag3 = rid,
+                    )
+                }
+                playInfo.cdnsWithName.map { cdn ->
+                    MediaPlaySource(
+                        id = cdn.cdn,
+                        name = cdn.name,
+                        episodeList = episodes
+                    )
+                }
+            } catch (_: Throwable) {
+                emptyList()
+            }
         } else emptyList()
         return MediaDetail(
             id = mediaId,
@@ -71,29 +86,104 @@ class MediaDetailService(
         val cdn = playSource.id
         val rid = episode.flag3 ?: throw RuntimeException("rid 为空")
         val rate = episode.flag1 ?: throw RuntimeException("分辨率为空")
-        val h5EncResp = douyuService.homeH5Enc(rid)
-        check(h5EncResp.error == 0) { h5EncResp.msg ?: "查询h5enc失败" }
-        checkNotNull(h5EncResp.data){ "查询h5enc失败，返回值为空" }
-        val jsCode = h5EncResp.data["room${rid}"]
-        checkNotNull(jsCode){ "查询h5enc失败，jsCode为空" }
-        val signParms = DouyuHelper.buildSignParms(jsCode, rid)
-        val resp = douyuService.getH5Play(
+        val playInfo = getPlayInfo(
             rid = rid,
-            signParams = signParms,
+            did = DouyuConst.DID,
             cdn = cdn,
             rate = rate,
+            liveConfig = actionDelegate.getLiveConfig(),
         )
-        if (resp.error != 0) {
-            throw RuntimeException(resp.msg ?: "获取播放地址失败")
-        }
-        val rtmpUrl = resp.data?.rtmpUrl ?: throw RuntimeException("获取播放地址rtmpUrl失败")
-        val rtmpLive = resp.data.rtmpLive
+        val rtmpUrl = playInfo.rtmpUrl
+        val rtmpLive = playInfo.rtmpLive
         return MediaHttpSource(
             url = "${rtmpUrl}/${rtmpLive}",
             httpHeaders = mapOf(
                 "User-Agent" to DouyuConst.IOS_USER_AGENT,
                 "Referer" to "${DouyuConst.PC_URL}${rid}",
             )
+        )
+    }
+
+    suspend fun getPlayInfo(
+        rid: Long,
+        did: String,
+        cdn: String = "",
+        rate: Int = -1,
+        liveConfig: LiveConfig,
+    ): H5PlayInfo {
+        var info: H5PlayInfo? = try {
+            getNewPlayInfo(
+                rid = rid,
+                did = did,
+                cdn = cdn,
+                rate = rate,
+                liveConfig = liveConfig,
+            ).data
+        } catch (_: Throwable) {
+            null
+        }
+        if (info == null) {
+            info = getOldPlayInfo(
+                rid = rid,
+                did = did,
+                cdn = cdn,
+                rate = rate,
+                liveConfig = liveConfig,
+            ).data
+        }
+        return info ?: throw RuntimeException("获取播放地址失败")
+    }
+
+    suspend fun getOldPlayInfo(
+        rid: Long,
+        did: String,
+        cdn: String = "",
+        rate: Int = -1,
+        liveConfig: LiveConfig,
+    ): DouyuApiResp<H5PlayInfo> {
+        val h5EncResp = douyuService.homeH5Enc(rid)
+        check(h5EncResp.error == 0) { h5EncResp.msg ?: "查询h5enc失败" }
+        checkNotNull(h5EncResp.data) { "查询h5enc失败，返回值为空" }
+        val jsCode = h5EncResp.data["room${rid}"]
+        checkNotNull(jsCode) { "查询h5enc失败，jsCode为空" }
+        val signParms = DouyuHelper.buildSignParams(
+            js = jsCode,
+            rid = rid,
+            did = did,
+        )
+        return douyuService.getH5Play(
+            rid = rid,
+            signParams = signParms,
+            cdn = cdn,
+            rate = rate,
+            hevc = liveConfig.hevc
+        )
+    }
+
+    suspend fun getNewPlayInfo(
+        rid: Long,
+        did: String,
+        cdn: String = "",
+        rate: Int = -1,
+        liveConfig: LiveConfig,
+    ): DouyuApiResp<H5PlayInfo> {
+        val encryptionInfo = DouyuHelper.getEncryptionInfo(
+            did = did,
+            douyuService = douyuService,
+            store = store,
+        )
+        val signParams = DouyuHelper.buildWebStreamSignParams(
+            encryptionInfo = encryptionInfo,
+            rid = rid,
+            did = did,
+            ts = System.currentTimeMillis() / 1000
+        )
+        return douyuService.getH5PlayV1(
+            rid = rid,
+            signParams = signParams,
+            cdn = cdn,
+            rate = rate,
+            hevc = liveConfig.hevc
         )
     }
 

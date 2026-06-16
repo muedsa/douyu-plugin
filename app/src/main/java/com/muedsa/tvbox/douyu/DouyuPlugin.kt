@@ -60,9 +60,15 @@ class DouyuPlugin(tvBoxContext: TvBoxContext) : IPlugin(tvBoxContext = tvBoxCont
         MainScreenService(
             douyuService = douyuService,
             douyuMobileService = douyuMobileService,
+            debug = tvBoxContext.debug,
         )
     }
-    private val mediaDetailService by lazy { MediaDetailService(douyuService) }
+    private val mediaDetailService by lazy {
+        MediaDetailService(
+            douyuService = douyuService,
+            store = store,
+        )
+    }
     private val mediaSearchService by lazy { MediaSearchService() }
     private val mediaCatalogService by lazy { MediaCatalogService() }
 
