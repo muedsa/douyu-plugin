@@ -32,15 +32,19 @@ class DouyuPlugin(tvBoxContext: TvBoxContext) : IPlugin(tvBoxContext = tvBoxCont
 
     override suspend fun onLaunched() {}
 
+    private val okHttpClient by lazy {
+        createOkHttpClient(
+            debug = tvBoxContext.debug,
+            cookieJar = PluginCookieJar(saver = cookieSaver),
+            onlyIpv4 = tvBoxContext.iPv6Status != IPv6Checker.IPv6Status.SUPPORTED
+        )
+    }
+
     private val douyuService by lazy {
         createJsonRetrofit(
             baseUrl = DouyuConst.PC_URL,
             service = DouyuService::class.java,
-            okHttpClient = createOkHttpClient(
-                debug = tvBoxContext.debug,
-                cookieJar = PluginCookieJar(saver = cookieSaver),
-                onlyIpv4 = tvBoxContext.iPv6Status != IPv6Checker.IPv6Status.SUPPORTED
-            )
+            okHttpClient = okHttpClient,
         )
     }
 
@@ -48,11 +52,7 @@ class DouyuPlugin(tvBoxContext: TvBoxContext) : IPlugin(tvBoxContext = tvBoxCont
         createJsonRetrofit(
             baseUrl = DouyuConst.MOBILE_URL,
             service = DouyuMobileService::class.java,
-            okHttpClient = createOkHttpClient(
-                debug = tvBoxContext.debug,
-                cookieJar = PluginCookieJar(saver = cookieSaver),
-                onlyIpv4 = tvBoxContext.iPv6Status != IPv6Checker.IPv6Status.SUPPORTED
-            )
+            okHttpClient = okHttpClient,
         )
     }
 
