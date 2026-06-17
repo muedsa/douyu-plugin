@@ -66,6 +66,7 @@ class DouyuPlugin(tvBoxContext: TvBoxContext) : IPlugin(tvBoxContext = tvBoxCont
     private val mediaDetailService by lazy {
         MediaDetailService(
             douyuService = douyuService,
+            okHttpClient = okHttpClient,
             store = store,
         )
     }

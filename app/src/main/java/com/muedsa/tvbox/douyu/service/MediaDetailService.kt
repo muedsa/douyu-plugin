@@ -14,9 +14,13 @@ import com.muedsa.tvbox.douyu.DouyuHelper
 import com.muedsa.tvbox.douyu.model.DouyuApiResp
 import com.muedsa.tvbox.douyu.model.H5PlayInfo
 import com.muedsa.tvbox.douyu.model.LiveConfig
+import com.muedsa.tvbox.tool.toRequestBuild
+import okhttp3.OkHttpClient
+import kotlin.random.Random
 
 class MediaDetailService(
     private val douyuService: DouyuService,
+    private val okHttpClient: OkHttpClient,
     private val store: IPluginPerfStore,
 ) : IMediaDetailService {
 
@@ -75,7 +79,9 @@ class MediaDetailService(
                 coverImageUrl = betard.room.coverSrc,
                 cardWidth = DouyuConst.CARD_WIDTH,
                 cardHeight = DouyuConst.CARD_HEIGHT,
-            )
+            ),
+            disableEpisodeProgression = true,
+            enableCustomDanmakuFlow = true,
         )
     }
 
@@ -190,5 +196,13 @@ class MediaDetailService(
     override suspend fun getEpisodeDanmakuDataList(episode: MediaEpisode): List<DanmakuData>
         = emptyList()
 
-    override suspend fun getEpisodeDanmakuDataFlow(episode: MediaEpisode): DanmakuDataFlow? = null
+    override suspend fun getEpisodeDanmakuDataFlow(episode: MediaEpisode): DanmakuDataFlow? {
+        val roomId = episode.flag3 ?: return null
+        val rand = Random.nextInt(1, 5)
+        return LiveDanmakuDataFlow(
+            roomId = roomId,
+            request = "wss://danmuproxy.douyu.com:850${rand}".toRequestBuild().build(),
+            okHttpClient = okHttpClient,
+        )
+    }
 }
