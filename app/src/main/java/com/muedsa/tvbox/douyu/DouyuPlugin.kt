@@ -71,7 +71,7 @@ class DouyuPlugin(tvBoxContext: TvBoxContext) : IPlugin(tvBoxContext = tvBoxCont
         )
     }
     private val mediaSearchService by lazy { MediaSearchService(douyuService = douyuService) }
-    private val mediaCatalogService by lazy { MediaCatalogService() }
+    private val mediaCatalogService by lazy { MediaCatalogService(douyuMobileService = douyuMobileService) }
 
     override fun provideMainScreenService(): IMainScreenService = mainScreenService
 
