@@ -22,4 +22,3 @@ dependencyResolutionManagement {
 rootProject.name = "douyu-plugin"
 include(":app")
 includeBuild("TvBoxPlugin")
-includeBuild("vibe-js")

@@ -117,7 +117,7 @@ class MediaDetailService(
         rate: Int = -1,
         liveConfig: LiveConfig,
     ): H5PlayInfo {
-        var info: H5PlayInfo? = try {
+        val info: H5PlayInfo? = try {
             getNewPlayInfo(
                 rid = rid,
                 did = did,
@@ -128,42 +128,7 @@ class MediaDetailService(
         } catch (_: Throwable) {
             null
         }
-        if (info == null) {
-            info = getOldPlayInfo(
-                rid = rid,
-                did = did,
-                cdn = cdn,
-                rate = rate,
-                liveConfig = liveConfig,
-            ).data
-        }
         return info ?: throw RuntimeException("获取播放地址失败")
-    }
-
-    suspend fun getOldPlayInfo(
-        rid: Long,
-        did: String,
-        cdn: String = "",
-        rate: Int = -1,
-        liveConfig: LiveConfig,
-    ): DouyuApiResp<H5PlayInfo> {
-        val h5EncResp = douyuService.homeH5Enc(rid)
-        check(h5EncResp.error == 0) { h5EncResp.msg ?: "查询h5enc失败" }
-        checkNotNull(h5EncResp.data) { "查询h5enc失败，返回值为空" }
-        val jsCode = h5EncResp.data["room${rid}"]
-        checkNotNull(jsCode) { "查询h5enc失败，jsCode为空" }
-        val signParms = DouyuHelper.buildSignParams(
-            js = jsCode,
-            rid = rid,
-            did = did,
-        )
-        return douyuService.getH5Play(
-            rid = rid,
-            signParams = signParms,
-            cdn = cdn,
-            rate = rate,
-            hevc = liveConfig.hevc
-        )
     }
 
     suspend fun getNewPlayInfo(

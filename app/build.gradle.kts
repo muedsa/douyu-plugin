@@ -7,7 +7,6 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -19,12 +18,12 @@ if (keystorePropertiesFile.exists() && keystorePropertiesFile.canRead()) {
 
 android {
     namespace = "com.muedsa.tvbox.douyu"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.muedsa.tvbox.douyu"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0.0"
     }
@@ -61,16 +60,19 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+}
 
-    // 修改APK文件名
-    applicationVariants.all {
-        outputs.all {
-            if (this is com.android.build.gradle.internal.api.ApkVariantOutputImpl) {
-                outputFileName = "${rootProject.name}-${versionName}-${buildType.name}.apk.tbp"
-            }
+androidComponents {
+    // 修改文件名
+    onVariants { variant ->
+        val buildTypeName = variant.buildType ?: "unknown"
+        variant.outputs.forEach { output ->
+            val versionName = output.versionName.orNull ?: "0.0.0"
+            output.outputFileName = "${rootProject.name}-${versionName}-${buildTypeName}.apk.tbp"
         }
     }
 }
+
 
 kotlin {
     compilerOptions {
@@ -79,7 +81,6 @@ kotlin {
 }
 
 dependencies {
-    implementation(libs.vibe.js)
     //implementation(libs.androidx.core.ktx)
     compileOnly(libs.tvbox.api)
     testImplementation(libs.tvbox.api)
